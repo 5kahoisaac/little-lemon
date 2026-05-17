@@ -1,3 +1,12 @@
-# Little Lemon Updates
+# Little Lemon Reservation App
 
-Responsive React reservation updates.
+Modern responsive Little Lemon reservation project.
+
+## Setup
+
+npm install
+npm run dev
+
+## Tests
+
+npm run test

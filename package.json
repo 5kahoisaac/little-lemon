@@ -1,7 +1,19 @@
 {
+  "name": "little-lemon",
+  "private": true,
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "test": "vitest"
+  },
+  "dependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "lucide-react": "^0.400.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "vitest": "^1.0.0",
+    "@testing-library/react": "^14.0.0"
   }
 }
