@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { CheckCircle } from 'lucide-react';
+import { CalendarDays, CheckCircle2, ChevronLeft, Clock, MapPin, UsersRound } from 'lucide-react';
 
 const today = new Date().toISOString().split('T')[0];
 
-const initialForm = {
+export const initialForm = {
   date: '',
   time: '',
   guests: '2',
@@ -12,46 +12,60 @@ const initialForm = {
   lastName: '',
   email: '',
   phone: '',
+  occasion: 'None',
 };
+
+const menuItems = [
+  { name: 'Greek Salad', description: 'Feta, olives, cucumber, tomato, and lemon dressing.', price: '$12.99', emoji: '🥗' },
+  { name: 'Bruschetta', description: 'Grilled bread, garlic, tomato, basil, and olive oil.', price: '$7.99', emoji: '🍅' },
+  { name: 'Lemon Pasta', description: 'Fresh pasta with herbs and bright lemon sauce.', price: '$16.50', emoji: '🍝' },
+];
 
 export function validateBooking(form) {
   const errors = {};
-
   if (!form.date) errors.date = 'Please choose a reservation date.';
-  if (!form.time) errors.time = 'Please choose a reservation time.';
+  else if (form.date < today) errors.date = 'Reservation date cannot be in the past.';
 
-  const guests = Number(form.guests);
+  if (!form.time) errors.time = 'Please choose an available time.';
 
-  if (guests < 1 || guests > 10) {
+  const guestCount = Number(form.guests);
+  if (!Number.isInteger(guestCount) || guestCount < 1 || guestCount > 10) {
     errors.guests = 'Guests must be between 1 and 10.';
   }
 
-  if (!form.firstName.trim()) {
-    errors.firstName = 'First name is required.';
-  }
-
-  if (!form.lastName.trim()) {
-    errors.lastName = 'Last name is required.';
-  }
-
-  if (!/^\S+@\S+\.\S+$/.test(form.email)) {
-    errors.email = 'Enter a valid email.';
-  }
-
-  if (!/^[0-9+()\-\s]{7,}$/.test(form.phone)) {
-    errors.phone = 'Enter a valid phone number.';
-  }
-
+  if (!form.firstName.trim()) errors.firstName = 'First name is required.';
+  if (!form.lastName.trim()) errors.lastName = 'Last name is required.';
+  if (!/^\S+@\S+\.\S+$/.test(form.email)) errors.email = 'Enter a valid email address.';
+  if (!/^[0-9+()\-\s]{7,}$/.test(form.phone)) errors.phone = 'Enter a valid phone number.';
   return errors;
 }
 
 function Field({ label, id, error, children }) {
+  const errorId = `${id}-error`;
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
-      {children}
-      {error && <p className="error">{error}</p>}
+      {React.cloneElement(children, {
+        'aria-invalid': Boolean(error),
+        'aria-describedby': error ? errorId : undefined,
+      })}
+      {error && <p className="error" id={errorId} role="alert">{error}</p>}
     </div>
+  );
+}
+
+function ScreenHeader({ eyebrow, title, subtitle, onBack }) {
+  return (
+    <header className="screen-header">
+      {onBack && (
+        <button className="icon-back" type="button" onClick={onBack} aria-label="Go back">
+          <ChevronLeft size={20} aria-hidden="true" />
+        </button>
+      )}
+      <p className="eyebrow dark">{eyebrow}</p>
+      <h1>{title}</h1>
+      {subtitle && <p className="sub">{subtitle}</p>}
+    </header>
   );
 }
 
@@ -59,150 +73,186 @@ export default function App() {
   const [step, setStep] = useState('home');
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState({});
-
-  const times = useMemo(() => ['17:00','17:30','18:00','18:30','19:00'], []);
+  const times = useMemo(() => ['17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00'], []);
 
   const update = (key, value) => {
-    setForm(prev => ({ ...prev, [key]: value }));
+    setForm((previous) => ({ ...previous, [key]: value }));
+    setErrors((previous) => ({ ...previous, [key]: undefined }));
   };
 
-  const submit = (e) => {
-    e.preventDefault();
+  const continueToDetails = (event) => {
+    event.preventDefault();
+    const stepErrors = validateBooking({
+      ...form,
+      firstName: 'Valid',
+      lastName: 'Guest',
+      email: 'guest@example.com',
+      phone: '1234567',
+    });
 
+    const partialErrors = {};
+    ['date', 'time', 'guests'].forEach((key) => {
+      if (stepErrors[key]) partialErrors[key] = stepErrors[key];
+    });
+
+    setErrors(partialErrors);
+    if (Object.keys(partialErrors).length === 0) setStep('details');
+  };
+
+  const submitBooking = (event) => {
+    event.preventDefault();
     const nextErrors = validateBooking(form);
-
     setErrors(nextErrors);
-
-    if (Object.keys(nextErrors).length === 0) {
-      setStep('confirmed');
-    }
+    if (Object.keys(nextErrors).length === 0) setStep('confirmed');
   };
 
   return (
-    <main className="app">
+    <main className="app" aria-label="Little Lemon reserve a table web app">
       {step === 'home' && (
-        <section className="hero">
-          <header>
-            <nav className="topbar">
-              <strong>Little Lemon</strong>
+        <article className="phone-frame home-screen" aria-labelledby="home-title">
+          <header className="home-hero">
+            <nav className="topbar" aria-label="Main navigation">
+              <a className="brand" href="#home" aria-label="Little Lemon home">Little Lemon</a>
               <a href="#menu">Menu</a>
-              <a href="#reserve">Reservations</a>
+              <button type="button" onClick={() => setStep('reserve')}>Reserve</button>
             </nav>
+
+            <section className="hero-content" id="home">
+              <div className="hero-copy">
+                <p className="eyebrow">Chicago</p>
+                <h1 id="home-title">Fresh Mediterranean dining, reserved in minutes.</h1>
+                <p>Book a table with clear availability, simple forms, and instant confirmation.</p>
+                <button className="primary hero-cta" type="button" onClick={() => setStep('reserve')}>
+                  Reserve a table
+                </button>
+              </div>
+
+              <figure className="hero-photo">
+                <span role="img" aria-label="Little Lemon plated dish">🍋</span>
+              </figure>
+            </section>
           </header>
 
-          <div className="hero-card">
-            <div>
-              <p className="eyebrow">Chicago</p>
+          <section className="quick-facts" aria-label="Restaurant highlights">
+            <div><MapPin size={18} aria-hidden="true" /><span>Chicago</span></div>
+            <div><Clock size={18} aria-hidden="true" /><span>5–9 PM</span></div>
+            <div><UsersRound size={18} aria-hidden="true" /><span>1–10 guests</span></div>
+          </section>
 
-              <h1>
-                Fresh Mediterranean food,
-                made for modern nights out.
-              </h1>
-
-              <p>Reserve a table in less than two minutes.</p>
-
-              <button
-                className="primary"
-                onClick={() => setStep('reserve')}
-              >
-                Reserve a table
-              </button>
+          <section id="menu" className="menu-section" aria-labelledby="menu-title">
+            <div className="section-title">
+              <div>
+                <p className="eyebrow dark">Specials</p>
+                <h2 id="menu-title">This week’s favorites</h2>
+              </div>
+              <button className="ghost" type="button">Online menu</button>
             </div>
 
-            <div className="photo">🍋</div>
-          </div>
-        </section>
+            <div className="dish-list">
+              {menuItems.map((item) => (
+                <article className="dish-card" key={item.name}>
+                  <div className="dish-copy">
+                    <h3>{item.name}</h3>
+                    <p>{item.description}</p>
+                    <strong>{item.price}</strong>
+                  </div>
+                  <div className="dish-image" aria-hidden="true">{item.emoji}</div>
+                </article>
+              ))}
+            </div>
+          </section>
+        </article>
       )}
 
       {step === 'reserve' && (
-        <section className="screen">
-          <h1>Reserve a table</h1>
+        <section className="phone-frame form-screen" aria-labelledby="reserve-title">
+          <ScreenHeader
+            eyebrow="Step 1 of 2"
+            title="Reserve a table"
+            subtitle="Choose your visit details."
+            onBack={() => setStep('home')}
+          />
 
-          <form className="card">
+          <form className="booking-card" onSubmit={continueToDetails} noValidate>
             <Field label="Date" id="date" error={errors.date}>
-              <input
-                id="date"
-                type="date"
-                min={today}
-                value={form.date}
-                onChange={(e) => update('date', e.target.value)}
-              />
+              <input id="date" name="date" type="date" min={today} value={form.date} onChange={(event) => update('date', event.target.value)} />
             </Field>
 
             <Field label="Time" id="time" error={errors.time}>
-              <select
-                id="time"
-                value={form.time}
-                onChange={(e) => update('time', e.target.value)}
-              >
-                <option value="">Select time</option>
-
-                {times.map((time) => (
-                  <option key={time}>{time}</option>
-                ))}
+              <select id="time" name="time" value={form.time} onChange={(event) => update('time', event.target.value)}>
+                <option value="">Select a time</option>
+                {times.map((time) => <option key={time} value={time}>{time}</option>)}
               </select>
             </Field>
 
-            <button
-              className="primary"
-              type="button"
-              onClick={() => setStep('details')}
-            >
-              Continue
-            </button>
+            <Field label="Number of diners" id="guests" error={errors.guests}>
+              <input id="guests" name="guests" type="number" min="1" max="10" inputMode="numeric" value={form.guests} onChange={(event) => update('guests', event.target.value)} />
+            </Field>
+
+            <fieldset>
+              <legend>Seating preference</legend>
+              <div className="radio-row">
+                {['Indoor', 'Outdoor'].map((option) => (
+                  <label className={`choice ${form.seating === option ? 'selected' : ''}`} key={option}>
+                    <input type="radio" name="seating" value={option} checked={form.seating === option} onChange={(event) => update('seating', event.target.value)} />
+                    <span>{option}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <button className="primary full" type="submit">Continue</button>
           </form>
         </section>
       )}
 
       {step === 'details' && (
-        <section className="screen">
-          <h1>Your details</h1>
+        <section className="phone-frame form-screen" aria-labelledby="details-title">
+          <ScreenHeader
+            eyebrow="Step 2 of 2"
+            title="Your details"
+            subtitle="We’ll send your confirmation here."
+            onBack={() => setStep('reserve')}
+          />
 
-          <form className="card" onSubmit={submit}>
+          <form className="booking-card" onSubmit={submitBooking} noValidate>
             <Field label="First name" id="firstName" error={errors.firstName}>
-              <input
-                id="firstName"
-                value={form.firstName}
-                onChange={(e) => update('firstName', e.target.value)}
-              />
+              <input id="firstName" name="firstName" autoComplete="given-name" value={form.firstName} onChange={(event) => update('firstName', event.target.value)} />
             </Field>
 
             <Field label="Last name" id="lastName" error={errors.lastName}>
-              <input
-                id="lastName"
-                value={form.lastName}
-                onChange={(e) => update('lastName', e.target.value)}
-              />
+              <input id="lastName" name="lastName" autoComplete="family-name" value={form.lastName} onChange={(event) => update('lastName', event.target.value)} />
             </Field>
 
             <Field label="Email" id="email" error={errors.email}>
-              <input
-                id="email"
-                value={form.email}
-                onChange={(e) => update('email', e.target.value)}
-              />
+              <input id="email" name="email" type="email" autoComplete="email" value={form.email} onChange={(event) => update('email', event.target.value)} />
             </Field>
 
-            <Field label="Phone" id="phone" error={errors.phone}>
-              <input
-                id="phone"
-                value={form.phone}
-                onChange={(e) => update('phone', e.target.value)}
-              />
+            <Field label="Phone number" id="phone" error={errors.phone}>
+              <input id="phone" name="phone" type="tel" autoComplete="tel" value={form.phone} onChange={(event) => update('phone', event.target.value)} />
             </Field>
 
-            <button className="primary">
-              Confirm reservation
-            </button>
+            <aside className="summary" aria-label="Reservation summary">
+              <strong>Reservation summary</strong>
+              <span><CalendarDays size={16} aria-hidden="true" /> {form.date || 'Date'} · {form.time || 'Time'} · {form.guests} guests · {form.seating}</span>
+            </aside>
+
+            <button className="primary full" type="submit">Confirm reservation</button>
           </form>
         </section>
       )}
 
       {step === 'confirmed' && (
-        <section className="confirmation">
-          <CheckCircle size={96} />
-          <h1>Table reserved!</h1>
-          <p>Your reservation has been confirmed.</p>
+        <section className="phone-frame confirmation" aria-labelledby="confirmed-title" aria-live="polite">
+          <div className="success-mark">
+            <CheckCircle2 size={110} aria-hidden="true" />
+          </div>
+          <h1 id="confirmed-title">Table reserved!</h1>
+          <p>
+            {form.firstName || 'Guest'}, your table for {form.guests} is confirmed for {form.date} at {form.time}.
+            A confirmation was sent to {form.email}.
+          </p>
+          <button className="primary" type="button" onClick={() => { setForm(initialForm); setErrors({}); setStep('home'); }}>Back to home</button>
         </section>
       )}
     </main>

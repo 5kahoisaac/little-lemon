@@ -1,19 +1,26 @@
 {
-  "name": "little-lemon",
+  "name": "little-lemon-reservation",
+  "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "test": "vitest"
+    "test": "vitest --environment jsdom",
+    "test:run": "vitest run --environment jsdom"
   },
   "dependencies": {
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-    "lucide-react": "^0.400.0"
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "lucide-react": "latest"
   },
   "devDependencies": {
-    "vite": "^5.0.0",
-    "vitest": "^1.0.0",
-    "@testing-library/react": "^14.0.0"
+    "vitest": "latest",
+    "jsdom": "latest",
+    "@testing-library/react": "latest",
+    "@testing-library/jest-dom": "latest",
+    "@testing-library/user-event": "latest"
   }
 }
