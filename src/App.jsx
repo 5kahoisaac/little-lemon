@@ -54,7 +54,7 @@ function Field({ label, id, error, children }) {
   );
 }
 
-function ScreenHeader({ eyebrow, title, subtitle, onBack }) {
+function ScreenHeader({ eyebrow, title, titleId, subtitle, onBack }) {
   return (
     <header className="screen-header">
       {onBack && (
@@ -63,9 +63,44 @@ function ScreenHeader({ eyebrow, title, subtitle, onBack }) {
         </button>
       )}
       <p className="eyebrow dark">{eyebrow}</p>
-      <h1>{title}</h1>
+      <h1 id={titleId}>{title}</h1>
       {subtitle && <p className="sub">{subtitle}</p>}
     </header>
+  );
+}
+
+export function BookingForm({ form, errors, availableTimes, onUpdate, onSubmit }) {
+  return (
+    <form className="booking-card" onSubmit={onSubmit} noValidate>
+      <Field label="Date" id="date" error={errors.date}>
+        <input id="date" name="date" type="date" min={today} value={form.date} onChange={(event) => onUpdate('date', event.target.value)} />
+      </Field>
+
+      <Field label="Time" id="time" error={errors.time}>
+        <select id="time" name="time" value={form.time} onChange={(event) => onUpdate('time', event.target.value)}>
+          <option value="">Select a time</option>
+          {availableTimes.map((time) => <option key={time} value={time}>{time}</option>)}
+        </select>
+      </Field>
+
+      <Field label="Number of diners" id="guests" error={errors.guests}>
+        <input id="guests" name="guests" type="number" min="1" max="10" inputMode="numeric" value={form.guests} onChange={(event) => onUpdate('guests', event.target.value)} />
+      </Field>
+
+      <fieldset>
+        <legend>Seating preference</legend>
+        <div className="radio-row">
+          {['Indoor', 'Outdoor'].map((option) => (
+            <label className={`choice ${form.seating === option ? 'selected' : ''}`} key={option}>
+              <input type="radio" name="seating" value={option} checked={form.seating === option} onChange={(event) => onUpdate('seating', event.target.value)} />
+              <span>{option}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <button className="primary full" type="submit">Continue</button>
+    </form>
   );
 }
 
@@ -73,7 +108,7 @@ export default function App() {
   const [step, setStep] = useState('home');
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState({});
-  const times = useMemo(() => ['17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00'], []);
+  const availableTimes = useMemo(() => ['17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00'], []);
 
   const update = (key, value) => {
     setForm((previous) => ({ ...previous, [key]: value }));
@@ -169,40 +204,18 @@ export default function App() {
           <ScreenHeader
             eyebrow="Step 1 of 2"
             title="Reserve a table"
+            titleId="reserve-title"
             subtitle="Choose your visit details."
             onBack={() => setStep('home')}
           />
 
-          <form className="booking-card" onSubmit={continueToDetails} noValidate>
-            <Field label="Date" id="date" error={errors.date}>
-              <input id="date" name="date" type="date" min={today} value={form.date} onChange={(event) => update('date', event.target.value)} />
-            </Field>
-
-            <Field label="Time" id="time" error={errors.time}>
-              <select id="time" name="time" value={form.time} onChange={(event) => update('time', event.target.value)}>
-                <option value="">Select a time</option>
-                {times.map((time) => <option key={time} value={time}>{time}</option>)}
-              </select>
-            </Field>
-
-            <Field label="Number of diners" id="guests" error={errors.guests}>
-              <input id="guests" name="guests" type="number" min="1" max="10" inputMode="numeric" value={form.guests} onChange={(event) => update('guests', event.target.value)} />
-            </Field>
-
-            <fieldset>
-              <legend>Seating preference</legend>
-              <div className="radio-row">
-                {['Indoor', 'Outdoor'].map((option) => (
-                  <label className={`choice ${form.seating === option ? 'selected' : ''}`} key={option}>
-                    <input type="radio" name="seating" value={option} checked={form.seating === option} onChange={(event) => update('seating', event.target.value)} />
-                    <span>{option}</span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            <button className="primary full" type="submit">Continue</button>
-          </form>
+          <BookingForm
+            form={form}
+            errors={errors}
+            availableTimes={availableTimes}
+            onUpdate={update}
+            onSubmit={continueToDetails}
+          />
         </section>
       )}
 
@@ -211,6 +224,7 @@ export default function App() {
           <ScreenHeader
             eyebrow="Step 2 of 2"
             title="Your details"
+            titleId="details-title"
             subtitle="We’ll send your confirmation here."
             onBack={() => setStep('reserve')}
           />

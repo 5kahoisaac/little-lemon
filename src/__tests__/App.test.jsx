@@ -1,9 +1,12 @@
-import React from 'react';
-import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom/vitest';
-import App, { validateBooking } from '../App.jsx';
+import App, { BookingForm, initialForm, validateBooking } from '../App.jsx';
+
+afterEach(() => {
+  cleanup();
+});
 
 describe('validateBooking', () => {
   it('returns meaningful errors for invalid input', () => {
@@ -22,6 +25,31 @@ describe('validateBooking', () => {
     expect(errors.time).toMatch(/choose/i);
     expect(errors.guests).toMatch(/between 1 and 10/i);
     expect(errors.email).toMatch(/valid email/i);
+  });
+});
+
+describe('BookingForm', () => {
+  it('renders available times from parent props and reports validation errors', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn((event) => event.preventDefault());
+
+    render(
+      <BookingForm
+        form={initialForm}
+        errors={{ date: 'Please choose a reservation date.' }}
+        availableTimes={['18:00', '19:00']}
+        onUpdate={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    expect(screen.getByRole('option', { name: '18:00' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '19:00' })).toBeInTheDocument();
+    expect(screen.getByText(/please choose a reservation date/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /continue/i }));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
   });
 });
 
